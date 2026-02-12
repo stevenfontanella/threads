@@ -221,7 +221,6 @@ test(() => {
   assert_Memory(memory, { "size": 3 });
 }, "Memory with string value for initial");
 
-
 test(() => {
   const argument = { "initial": true };
   const memory = new WebAssembly.Memory(argument);
