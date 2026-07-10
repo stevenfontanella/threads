@@ -398,24 +398,27 @@ let rmwop = function
   | I32 I32Op.RmwXchg | I64 I64Op.RmwXchg -> "xchg"
   | _ -> assert false
 
-let memop_without_type name {align; offset; _} sz =
-  name ^
+let format_memop align offset sz =
   (if offset = 0l then "" else " offset=" ^ nat32 offset) ^
   (if 1 lsl align = sz then "" else " align=" ^ nat (1 lsl align))
 
-let memop name typ {ty; align; offset; _} sz =
-  typ ty ^ "." ^ name ^
-  (if offset = 0l then "" else " offset=" ^ nat32 offset) ^
-  (if 1 lsl align = sz then "" else " align=" ^ nat (1 lsl align))
+let memop name typ (op : _ memop) sz =
+  typ op.ty ^ "." ^ name ^ format_memop op.align op.offset sz
+
+let atomicmemop_without_type name (op : _ atomicmemop) sz =
+  name ^ format_memop op.align op.offset sz
+
+let atomicmemop name typ (op : _ atomicmemop) sz =
+  typ op.ty ^ "." ^ name ^ format_memop op.align op.offset sz
 
 let loadop op =
-  match op.pack with
+  match (op : loadop).pack with
   | None -> memop "load" num_type op (num_size op.ty)
   | Some (sz, ext) ->
     memop ("load" ^ pack_size sz ^ extension ext) num_type op (packed_size sz)
 
 let storeop op =
-  match op.pack with
+  match (op : storeop).pack with
   | None -> memop "store" num_type op (num_size op.ty)
   | Some sz -> memop ("store" ^ pack_size sz) num_type op (packed_size sz)
 
@@ -428,46 +431,46 @@ let vec_loadop (op : vec_loadop) =
 let vec_storeop op =
   memop "store" vec_type op (vec_size op.ty)
 
-let vec_laneop instr (op, i) =
+let vec_laneop instr ((op : (vec_type, pack_size) memop), i) =
   memop (instr ^ pack_size op.pack ^ "_lane") vec_type op
     (packed_size op.pack) ^ " " ^ nat i
 
 let memoryatomicwaitop op =
-  match op.pack with
+  match (op : atomicop).pack with
   | None ->
     let sz = string_of_int (8 * num_size op.ty) in
-    memop_without_type ("memory.atomic.wait" ^ sz) op (num_size op.ty)
+    atomicmemop_without_type ("memory.atomic.wait" ^ sz) op (num_size op.ty)
   | Some sz -> assert false
 
 let memoryatomicnotifyop op =
-  match op.pack with
-  | None -> memop_without_type "memory.atomic.notify" op (num_size op.ty)
+  match (op : atomicop).pack with
+  | None -> atomicmemop_without_type "memory.atomic.notify" op (num_size op.ty)
   | Some sz -> assert false
 
 let atomicloadop op =
-  match op.pack with
-  | None -> memop "atomic.load" num_type  op (num_size op.ty)
+  match (op : atomicop).pack with
+  | None -> atomicmemop "atomic.load" num_type  op (num_size op.ty)
   | Some sz ->
-    memop ("atomic.load" ^ pack_size sz ^ "_u") num_type op (packed_size sz)
+    atomicmemop ("atomic.load" ^ pack_size sz ^ "_u") num_type op (packed_size sz)
 
 let atomicstoreop op =
-  match op.pack with
-  | None -> memop "atomic.store" num_type op (num_size op.ty)
+  match (op : atomicop).pack with
+  | None -> atomicmemop "atomic.store" num_type op (num_size op.ty)
   | Some sz ->
-    memop ("atomic.store" ^ pack_size sz) num_type op (packed_size sz)
+    atomicmemop ("atomic.store" ^ pack_size sz) num_type op (packed_size sz)
 
 let atomicrmwop op rmw_op =
-  match op.pack with
-  | None -> memop ("atomic.rmw." ^ rmwop rmw_op) num_type op (num_size op.ty)
+  match (op : atomicop).pack with
+  | None -> atomicmemop ("atomic.rmw." ^ rmwop rmw_op) num_type op (num_size op.ty)
   | Some sz ->
-    memop ("atomic.rmw" ^ pack_size sz ^ "." ^ rmwop rmw_op ^ "_u") num_type op
+    atomicmemop ("atomic.rmw" ^ pack_size sz ^ "." ^ rmwop rmw_op ^ "_u") num_type op
       (packed_size sz)
 
 let atomicrmwcmpxchgop op =
-  match op.pack with
-  | None -> memop "atomic.rmw.cmpxchg" num_type op (num_size op.ty)
+  match (op : atomicop).pack with
+  | None -> atomicmemop "atomic.rmw.cmpxchg" num_type op (num_size op.ty)
   | Some sz ->
-    memop ("atomic.rmw" ^ pack_size sz ^ ".cmpxchg_u") num_type op (packed_size sz)
+    atomicmemop ("atomic.rmw" ^ pack_size sz ^ ".cmpxchg_u") num_type op (packed_size sz)
 
 (* Expressions *)
 

@@ -120,16 +120,16 @@ type vec_extractop = (V128Op.extractop) Values.vecop
 type vec_replaceop = (V128Op.replaceop) Values.vecop
 
 type ordering = SeqCst
-type unordered = Unordered
 
-type ('t, 'p, 'o) memop = {ty : 't; align : int; offset : int32; pack : 'p; ordering : 'o}
-type loadop = (num_type, (pack_size * extension) option, unordered) memop
-type storeop = (num_type, pack_size option, unordered) memop
-type atomicop = (num_type, pack_size option, ordering) memop
+type ('t, 'p) memop = {ty : 't; align : int; offset : int32; pack : 'p}
+type ('t, 'p) atomicmemop = {ty : 't; align : int; offset : int32; pack : 'p; ordering : ordering}
+type loadop = (num_type, (pack_size * extension) option) memop
+type storeop = (num_type, pack_size option) memop
+type atomicop = (num_type, pack_size option) atomicmemop
 
-type vec_loadop = (vec_type, (pack_size * vec_extension) option, unordered) memop
-type vec_storeop = (vec_type, unit, unordered) memop
-type vec_laneop = (vec_type, pack_size, unordered) memop * int
+type vec_loadop = (vec_type, (pack_size * vec_extension) option) memop
+type vec_storeop = (vec_type, unit) memop
+type vec_laneop = (vec_type, pack_size) memop * int
 
 
 (* Expressions *)
